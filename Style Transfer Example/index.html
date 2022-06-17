@@ -1,0 +1,54 @@
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.12.0/dist/tf.min.js"></script>
+<!DOCTYPE html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Style Transfer | Infinitode Experiments</title>
+</head>
+
+<body onload="loadModel()">
+    <h3 style="margin-bottom: 0;">Style Transfer | Infinitode Experiments</h3>
+    <p style="margin-top: 0;">This is an example of using Style Transfer in a browser, locally.</p>
+    <img onclick="doStyleTransfer()" id="image" width="500" src="./image1.png" alt=""></img>
+    <img id="styleImage" width="500" src="./style2.png" alt=""></img>
+    <canvas id="stylizedImage" width="500" height="500"></canvas>
+</body>
+
+
+</html>
+
+<script>
+    async function loadModel() {
+        return tf.loadGraphModel('./style_transfer_js/style_transfer/model.json');
+    }
+    async function doStyleTransfer() {
+        const model = await loadModel();
+
+        //load images
+        const image = document.getElementById('image');
+        const styleImage = document.getElementById('styleImage');
+        console.log('model' + model);
+        const imageTensor = preprocess(image);
+        const styleImageTensor = preprocess(styleImage);
+
+        //process the result
+        let result = model.execute([styleImageTensor, imageTensor]);
+
+        //update canvas from 4d to 3d because it's only one image
+        let canvas = document.getElementById('stylizedImage');
+
+        tf.browser.toPixels(tf.squeeze(result), canvas);
+    }
+
+    function preprocess(imageData) {
+        let imageTensor = tf.browser.fromPixels(imageData);
+
+        //image has 3 channels that needs to be normalized to 0 and 1
+        const offset = tf.scalar(255.0);
+        const normalized = tf.scalar(1.0).sub(imageTensor.div(offset));
+        //we need 4 dimensions for this tensor
+        const batched = normalized.expandDims(0);
+        //return the tensor
+        return batched;
+    }
+</script>
